@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getInfoSources, saveInfoSource, deleteInfoSource } from '@/lib/store'
+import { getInfoSources, saveInfoSource, deleteInfoSource } from '@/lib/api'
 import { InfoSource, StubPost } from '@/lib/types'
 import { Modal } from '@/components/ui/Modal'
 
@@ -23,20 +23,20 @@ export default function InfoPage() {
   const [url, setUrl] = useState('')
 
   useEffect(() => {
-    setSources(getInfoSources())
+    getInfoSources().then(setSources)
   }, [])
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!name.trim()) return
-    const s = saveInfoSource({ name: name.trim(), url: url.trim() })
+    const s = await saveInfoSource({ name: name.trim(), url: url.trim() })
     setSources(prev => [...prev, s])
     setName('')
     setUrl('')
     setModalOpen(false)
   }
 
-  const handleDelete = (id: string) => {
-    deleteInfoSource(id)
+  const handleDelete = async (id: string) => {
+    await deleteInfoSource(id)
     setSources(prev => prev.filter(s => s.id !== id))
   }
 
@@ -176,7 +176,7 @@ export default function InfoPage() {
           <button
             onClick={handleAdd}
             disabled={!name.trim()}
-            className="w-full py-3 bg-slate-800 text-white text-sm font-semibold rounded-xl hover:bg-slate-700 disabled:opacity-40 transition-colors"
+            className="w-full py-3 bg-slate-600 text-white text-sm font-semibold rounded-xl hover:bg-slate-500 disabled:opacity-40 transition-colors"
           >
             Добавить
           </button>

@@ -1,4 +1,4 @@
-import { DayTask, PeriodTask } from './types'
+import { DayTask, PeriodTask, InfoSource } from './types'
 
 // ── Day tasks ────────────────────────────────────────────────────────────────
 
@@ -114,6 +114,28 @@ export async function savePeriodNote(period: string, text: string): Promise<void
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ type: 'period', key: period, note: text }),
   })
+}
+
+// ── Info sources ─────────────────────────────────────────────────────────────
+
+export async function getInfoSources(): Promise<InfoSource[]> {
+  const res = await fetch('/api/info-sources')
+  if (!res.ok) return []
+  return res.json()
+}
+
+export async function saveInfoSource(source: Omit<InfoSource, 'id' | 'createdAt'>): Promise<InfoSource> {
+  const res = await fetch('/api/info-sources', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(source),
+  })
+  const { id, createdAt } = await res.json()
+  return { ...source, id, createdAt }
+}
+
+export async function deleteInfoSource(id: string): Promise<void> {
+  await fetch(`/api/info-sources/${id}`, { method: 'DELETE' })
 }
 
 // ── Demo / clear ─────────────────────────────────────────────────────────────
