@@ -1,7 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { loadDemoData, clearAllData } from '@/lib/demo'
+import { logout } from '@/app/actions/auth'
+import { loadDemoData, clearAllData } from '@/lib/api'
 
 const FEATURES = [
   {
@@ -37,14 +38,14 @@ const FEATURES = [
 export default function ReflectionPage() {
   const router = useRouter()
 
-  const handleLoadDemo = () => {
-    loadDemoData()
+  const handleLoadDemo = async () => {
+    await loadDemoData()
     router.push('/day')
   }
 
-  const handleClear = () => {
+  const handleClear = async () => {
     if (confirm('Очистить все данные? Это действие нельзя отменить.')) {
-      clearAllData()
+      await clearAllData()
       router.refresh()
     }
   }
@@ -125,10 +126,18 @@ export default function ReflectionPage() {
           </button>
         </div>
 
-        <div className="text-center pb-4">
-          <p className="text-xs text-gray-400">
-            Данные хранятся в браузере и не передаются на сервер
-          </p>
+        {/* Account */}
+        <div className="border border-gray-100 rounded-2xl p-4">
+          <p className="text-xs font-semibold text-gray-500 mb-1">Аккаунт</p>
+          <p className="text-xs text-gray-400 mb-3">Данные хранятся в базе данных и привязаны к вашему аккаунту.</p>
+          <form action={logout}>
+            <button
+              type="submit"
+              className="text-xs text-gray-500 border border-gray-200 px-4 py-2 rounded-xl hover:bg-gray-50 transition-colors"
+            >
+              Выйти из аккаунта
+            </button>
+          </form>
         </div>
 
       </div>

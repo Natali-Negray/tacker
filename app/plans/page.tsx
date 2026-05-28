@@ -4,8 +4,10 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   getPeriodTasks, savePeriodTask, updatePeriodTask, deletePeriodTask,
   movePeriodTask, getPeriodNote, savePeriodNote,
+} from '@/lib/api'
+import {
   todayStr, getWeekKey, getMonthKey, formatWeekDisplay, formatMonthDisplay,
-  addWeeks, addMonths, getTaskTypeStats
+  addWeeks, addMonths, getTaskTypeStats,
 } from '@/lib/store'
 import { PeriodTask, FilterType } from '@/lib/types'
 import { TypeProgressBlock } from '@/components/ui/ProgressBar'
@@ -27,15 +29,19 @@ export default function PlansPage() {
   const [editTask, setEditTask] = useState<PeriodTask | null>(null)
   const [moveModalOpen, setMoveModalOpen] = useState(false)
   const [movingTask, setMovingTask] = useState<PeriodTask | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const newPeriod = periodType === 'week' ? getWeekKey(today) : getMonthKey(today)
     setPeriod(newPeriod)
   }, [periodType, today])
 
-  const reload = useCallback(() => {
-    setTasks(getPeriodTasks(period))
-    setNote(getPeriodNote(period))
+  const reload = useCallback(async () => {
+    setLoading(true)
+    const [t, n] = await Promise.all([getPeriodTasks(period), getPeriodNote(period)])
+    setTasks(t)
+    setNote(n)
+    setLoading(false)
   }, [period])
 
   useEffect(() => { reload() }, [reload])
@@ -63,26 +69,26 @@ export default function PlansPage() {
     else setPeriod(prev => addMonths(prev, dir))
   }
 
-  const handleSave = (data: Omit<PeriodTask, 'id' | 'createdAt'>) => {
-    if (editTask) updatePeriodTask(period, editTask.id, data)
-    else savePeriodTask(data)
-    reload()
+  const handleSave = async (data: Omit<PeriodTask, 'id' | 'createdAt'>) => {
+    if (editTask) await updatePeriodTask(period, editTask.id, data)
+    else await savePeriodTask(data)
+    await reload()
     setEditTask(null)
   }
 
-  const handleStatusChange = (id: string, status: PeriodTask['status']) => {
-    updatePeriodTask(period, id, { status })
-    reload()
+  const handleStatusChange = async (id: string, status: PeriodTask['status']) => {
+    await updatePeriodTask(period, id, { status })
+    await reload()
   }
 
-  const handleDelete = (id: string) => {
-    deletePeriodTask(period, id)
-    reload()
+  const handleDelete = async (id: string) => {
+    await deletePeriodTask(period, id)
+    await reload()
   }
 
-  const handleMove = (task: PeriodTask, targetPeriod: string) => {
-    movePeriodTask(task, targetPeriod)
-    reload()
+  const handleMove = async (task: PeriodTask, targetPeriod: string) => {
+    await movePeriodTask(task, targetPeriod)
+    await reload()
   }
 
   const handleNoteChange = (text: string) => {
@@ -124,7 +130,9 @@ export default function PlansPage() {
 
         {/* Task list */}
         <div className="space-y-2">
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-10 text-gray-300 text-sm">Загрузка...</div>
+          ) : filtered.length === 0 ? (
             <div className="text-center py-10 text-gray-400 text-sm">
               {tasks.length === 0
                 ? `Целей на ${periodType === 'week' ? 'неделю' : 'месяц'} пока нет`
@@ -144,7 +152,7 @@ export default function PlansPage() {
           )}
         </div>
 
-        {/* Progress — at the bottom */}
+        {/* Progress */}
         <TypeProgressBlock stats={stats} totalDone={done} totalCount={tasks.length} />
 
         {/* Ценное за период */}

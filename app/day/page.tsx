@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import {
-  getDayTasks, saveDayTask, updateDayTask, deleteDayTask,
-  moveTask, getDailyNote, saveDailyNote,
-  todayStr, addDays, formatDateDisplay, getTaskTypeStats
+  getDayTasks, saveDayTask, updateDayTask, deleteDayTask, moveTask,
+  getDailyNote, saveDailyNote,
+} from '@/lib/api'
+import {
+  todayStr, addDays, formatDateDisplay, getTaskTypeStats,
 } from '@/lib/store'
 import { DayTask, FilterType } from '@/lib/types'
 import { TypeProgressBlock } from '@/components/ui/ProgressBar'
@@ -77,14 +79,18 @@ export default function DayPage() {
   const [moveModalOpen, setMoveModalOpen] = useState(false)
   const [moveTask_, setMoveTask_] = useState<DayTask | null>(null)
   const [isEvening, setIsEvening] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     setIsEvening(new Date().getHours() >= 18)
   }, [])
 
-  const reload = useCallback(() => {
-    setTasks(getDayTasks(date))
-    setNote(getDailyNote(date))
+  const reload = useCallback(async () => {
+    setLoading(true)
+    const [t, n] = await Promise.all([getDayTasks(date), getDailyNote(date)])
+    setTasks(t)
+    setNote(n)
+    setLoading(false)
   }, [date])
 
   useEffect(() => { reload() }, [reload])
@@ -99,26 +105,26 @@ export default function DayPage() {
   const done = tasks.filter(t => t.status === 'done').length
   const stats = getTaskTypeStats(tasks)
 
-  const handleSave = (data: Omit<DayTask, 'id' | 'createdAt'>) => {
-    if (editTask) updateDayTask(date, editTask.id, data)
-    else saveDayTask(data)
-    reload()
+  const handleSave = async (data: Omit<DayTask, 'id' | 'createdAt'>) => {
+    if (editTask) await updateDayTask(date, editTask.id, data)
+    else await saveDayTask(data)
+    await reload()
     setEditTask(null)
   }
 
-  const handleStatusChange = (id: string, newStatus: DayTask['status']) => {
-    updateDayTask(date, id, { status: newStatus })
-    reload()
+  const handleStatusChange = async (id: string, newStatus: DayTask['status']) => {
+    await updateDayTask(date, id, { status: newStatus })
+    await reload()
   }
 
-  const handleDelete = (id: string) => {
-    deleteDayTask(date, id)
-    reload()
+  const handleDelete = async (id: string) => {
+    await deleteDayTask(date, id)
+    await reload()
   }
 
-  const handleMove = (task: DayTask, targetDate: string) => {
-    moveTask(task, targetDate)
-    reload()
+  const handleMove = async (task: DayTask, targetDate: string) => {
+    await moveTask(task, targetDate)
+    await reload()
   }
 
   const openMoveModal = (task: DayTask) => {
@@ -149,7 +155,7 @@ export default function DayPage() {
           onDateChange={setDate}
         />
 
-        {/* Morning motivator — subtle, not dominant */}
+        {/* Morning motivator */}
         <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-1.5">
             <span className="text-base">☀️</span>
@@ -161,8 +167,10 @@ export default function DayPage() {
         {/* Filter */}
         <FilterBar value={filter} onChange={setFilter} />
 
-        {/* Task list with section headers */}
-        {tasks.length === 0 ? (
+        {/* Task list */}
+        {loading ? (
+          <div className="text-center py-10 text-gray-300 text-sm">Загрузка...</div>
+        ) : tasks.length === 0 ? (
           <div className="text-center py-10 text-gray-400 text-sm">
             Задач пока нет. Нажмите + чтобы добавить
           </div>
@@ -197,7 +205,7 @@ export default function DayPage() {
           </div>
         )}
 
-        {/* Progress — at the bottom */}
+        {/* Progress */}
         <TypeProgressBlock stats={stats} totalDone={done} totalCount={tasks.length} />
 
         {/* Evening motivator */}
