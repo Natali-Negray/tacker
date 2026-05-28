@@ -393,7 +393,7 @@ git push origin master:main  # Деплой на Render
 
 | # | Файл | Описание | Приоритет |
 |---|---|---|---|
-| 1 | `app/info/page.tsx` | Использует localStorage вместо API (getInfoSources из lib/store) | Высокий |
+| 1 | `app/info/page.tsx` | ~~Использует localStorage вместо API~~ — **ИСПРАВЛЕН** 2026-05-29 | — |
 | 2 | `app/layout.tsx` | BottomNav видна на /login и /register | Средний |
 | 3 | `app/day/page.tsx` | Нет debounce — каждый символ в "Ценное за день" = API запрос | Средний |
 | 4 | `app/plans/page.tsx` | То же — нет debounce на заметку периода | Средний |
